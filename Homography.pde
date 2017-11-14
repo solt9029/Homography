@@ -2,7 +2,7 @@ import org.apache.commons.math3.linear.*; // 線形代数ライブラリ
 
 void setup() {
   size(500, 400);
-  
+
   PImage inputImg = loadImage("test.jpg");
 
   double [][] inputXY = {
@@ -15,10 +15,10 @@ void setup() {
 
   double[][] outputUV = {
     {0, 0}, 
-    {499, 0}, 
-    {0, 399}, 
-    {499, 399}, 
-    {230, 167}
+    {500, 0}, 
+    {0, 400}, 
+    {500, 400}, 
+    {231, 168}
   };
 
   double[][] AArray = {
@@ -67,27 +67,39 @@ void setup() {
 
   RealMatrix Homography = MatrixUtils.createRealMatrix(HomographyArray);
   showMatrix(Homography);
-  
+
+  RealMatrix InverseHomography = MatrixUtils.inverse(Homography);
+  showMatrix(InverseHomography);
+
   inputImg.loadPixels();
   loadPixels();
-  
-  //for (int yIndex = 0; yIndex < 400; yIndex++) {
-  //  for (int xIndex = 0; xIndex < 500; xIndex++) {
-  //    double[] xyArray = {xIndex, yIndex, 1};
-  //    RealVector xy = MatrixUtils.createRealVector(xyArray);
-  //    RealVector uv = Homography.operate(xy);
-  //    int pixelIndex = (int)(uv.getEntry(0) + uv.getEntry(1) * 500);
-  //    pixels[pixelIndex] = inputImg.pixels[xIndex + yIndex * 500];
-  //    //pixels[xIndex + yIndex * 500] = inputImg.pixels[xIndex + yIndex * 500];
-  //  }
-  //}
-  
-  double[] xyArray = {217, 157, 1};
-  RealVector xy = MatrixUtils.createRealVector(xyArray);
-  RealVector uv = Homography.operate(xy);
-  showVector(uv);
-  
+
+  for (int vIndex = 0; vIndex < 400; vIndex++) {
+    for (int uIndex = 0; uIndex < 500; uIndex++) {
+      double[] uvArray = {uIndex, vIndex, 1};
+      RealVector uv = MatrixUtils.createRealVector(uvArray);
+      RealVector xy = InverseHomography.operate(uv);
+
+      double[][] TmpArray = {
+        {1.0 / xy.getEntry(2), 0, 0},
+        {0, 1.0 / xy.getEntry(2), 0},
+        {0, 0, 1.0 / xy.getEntry(2)}
+      };
+
+      RealMatrix Tmp = MatrixUtils.createRealMatrix(TmpArray);
+      xy = Tmp.operate(xy);
+
+      int pixelIndex = (int)xy.getEntry(0) + (int)xy.getEntry(1) * 500;
+      if (uIndex == 0 && vIndex == 0) {  
+        println(pixelIndex);
+      }
+      pixels[uIndex + vIndex * 500] = inputImg.pixels[pixelIndex];
+    }
+  }
+
   updatePixels();
+  
+  save("output.jpg");
 }
 
 void showMatrix(RealMatrix M) {
